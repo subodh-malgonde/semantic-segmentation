@@ -58,7 +58,7 @@ def maybe_download_pretrained_vgg(data_dir):
         os.remove(os.path.join(vgg_path, vgg_filename))
 
 
-def gen_batch_function(data_folder, image_shape):
+def gen_batch_function(data_folder, image_shape, image_paths):
     """
     Generate function to create batches of training data
     :param data_folder: Path to folder that contains all the datasets
@@ -71,7 +71,7 @@ def gen_batch_function(data_folder, image_shape):
         :param batch_size: Batch Size
         :return: Batches of training data
         """
-        image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
+        # image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
         label_paths = {
             re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
             for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
