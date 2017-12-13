@@ -8,8 +8,8 @@ import time
 from tqdm import *
 import math
 from glob import glob
-import random
 from sklearn.model_selection import train_test_split
+import shutil
 
 
 # Check TensorFlow Version
@@ -136,7 +136,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 # tests.test_optimize(optimize)
 
 
-def train_nn(sess, epochs, batch_size, get_batches_fn_training, get_batches_fn_validation, train_op,
+def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_paths, validation_image_paths, train_op,
              cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate):
     """
     Train neural network and print out the loss during training.
@@ -152,13 +152,15 @@ def train_nn(sess, epochs, batch_size, get_batches_fn_training, get_batches_fn_v
     :param learning_rate: TF Placeholder for learning rate
     """
     # TODO: Implement function
+
+    # Create function to get batches
+    get_batches_fn_training = helper.gen_batch_function(data_folder, image_shape, training_image_paths)
+
     training_batch_generator = get_batches_fn_training(batch_size)
-    validation_batch_generator = get_batches_fn_training(58)
-    X_val, y_val = next(validation_batch_generator)
 
     KEEP_PROB = 0.5
     LEARNING_RATE = 0.0001
-    samples_per_epoch = 231
+    samples_per_epoch = len(training_image_paths)
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
 
     for epoch in range(epochs):
@@ -170,11 +172,33 @@ def train_nn(sess, epochs, batch_size, get_batches_fn_training, get_batches_fn_v
                 keep_prob: KEEP_PROB,
                 learning_rate: LEARNING_RATE
             })
-            print("Batch loss: ", loss)
-        validation_loss = sess.run([cross_entropy_loss], feed_dict={input_image: X_val, correct_label: y_val, keep_prob: 1.0})
-        print("Validation loss: ", validation_loss)
+            print("Batch loss: ", loss[0])
+        validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
+                                   keep_prob, cross_entropy_loss)
+        training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
+                                   keep_prob, cross_entropy_loss)
+        print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
 
-#tests.test_train_nn(train_nn)
+    print("Saving the model")
+    if "saved_model" in os.listdir(os.getcwd()):
+        shutil.rmtree("./saved_model")
+    builder = tf.saved_model.builder.SavedModelBuilder("./saved_model")
+    builder.add_meta_graph_and_variables(sess, ["vgg16"])
+    builder.save()
+
+
+def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op):
+    data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths)
+    batch_size = 8
+    data_generator = data_generator_function(batch_size)
+    num_examples = int(math.floor(len(image_paths)/batch_size)*batch_size)
+    print("Num examples: ", num_examples)
+    total_loss = 0
+    for offset in range(0, num_examples, batch_size):
+        X_batch, y_batch = next(data_generator)
+        loss = sess.run([loss_op], feed_dict={input_image: X_batch, correct_label: y_batch, keep_prob: 1.0})
+        total_loss += (loss[0] * X_batch.shape[0])
+    return total_loss/num_examples
 
 
 def run():
@@ -201,12 +225,6 @@ def run():
 
         training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
 
-        print(len(training_image_paths), len(validation_image_paths))
-
-        # Create function to get batches
-        get_batches_fn_training = helper.gen_batch_function(data_folder, image_shape, training_image_paths)
-        get_batches_fn_validation = helper.gen_batch_function(data_folder, image_shape, validation_image_paths)
-
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
@@ -226,10 +244,10 @@ def run():
         sess.run(my_variable_initializers)
 
         #Train NN using the train_nn function
-        train_nn(sess, epochs=1, batch_size=16, get_batches_fn_training=get_batches_fn_training,
-                 get_batches_fn_validation=get_batches_fn_validation, train_op=train_op,
-                 cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor, correct_label=correct_label,
-                 keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate)
+        train_nn(sess, epochs=1, data_folder=data_folder,image_shape=image_shape, batch_size=16,
+                 training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
+                 train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
+                 correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate)
 
 
         # TODO: Save inference data using helper.save_inference_samples
