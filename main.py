@@ -158,8 +158,8 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
 
     training_batch_generator = get_batches_fn_training(batch_size)
 
-    KEEP_PROB = 0.5
-    LEARNING_RATE = 0.0001
+    KEEP_PROB = 0.4
+    LEARNING_RATE = 0.00005
     samples_per_epoch = len(training_image_paths)
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
 
@@ -172,7 +172,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
                 keep_prob: KEEP_PROB,
                 learning_rate: LEARNING_RATE
             })
-            print("Batch loss: ", loss)
+            # print("Batch loss: ", loss)
         validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss)
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
@@ -243,7 +243,7 @@ def run():
         sess.run(my_variable_initializers)
 
         #Train NN using the train_nn function
-        train_nn(sess, epochs=1, data_folder=data_folder,image_shape=image_shape, batch_size=16,
+        train_nn(sess, epochs=10, data_folder=data_folder,image_shape=image_shape, batch_size=16,
                  training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
                  train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
                  correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate)
