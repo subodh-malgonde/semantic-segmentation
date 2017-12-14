@@ -10,11 +10,15 @@ import math
 from glob import glob
 from sklearn.model_selection import train_test_split
 import shutil
+import argparse
 
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
 print('TensorFlow Version: {}'.format(tf.__version__))
+
+KEEP_PROB = 0.6
+LEARNING_RATE = 0.00005
 
 # Check for a GPU
 if not tf.test.gpu_device_name():
@@ -158,8 +162,6 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
 
     training_batch_generator = get_batches_fn_training(batch_size)
 
-    KEEP_PROB = 0.4
-    LEARNING_RATE = 0.00005
     samples_per_epoch = len(training_image_paths)
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
 
@@ -201,6 +203,55 @@ def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_la
 
 
 def run():
+    parser = argparse.ArgumentParser(description='Remote Driving')
+    parser.add_argument(
+        '-n',
+        '--num_epochs',
+        type=int,
+        nargs='?',
+        default=1,
+        help='Number of epochs.'
+    )
+    parser.add_argument(
+        '-lr',
+        '--learning_rate',
+        type=float,
+        nargs='?',
+        default=0.0001,
+        help='Learning rate'
+    )
+
+    parser.add_argument(
+        '-k',
+        '--keep_probability',
+        type=float,
+        nargs='?',
+        default=1.0,
+        help='Keep probability for dropout'
+    )
+
+    parser.add_argument(
+        '-b',
+        '--batch_size',
+        type=int,
+        nargs='?',
+        default=16,
+        help='Batch size.'
+    )
+
+    args = parser.parse_args()
+
+    num_epochs = args.num_epochs
+    LEARNING_RATE = args.learning_rate
+    KEEP_PROB = args.keep_probability
+    batch_size = args.batch_size
+
+    print("Number of epochs:", num_epochs)
+    print("learning rate:", LEARNING_RATE)
+    print("Keep prob:", KEEP_PROB)
+    print("Batch size:", batch_size)
+
+
     num_classes = 2
     image_shape = (160, 576)
     data_dir = './data'
@@ -243,7 +294,7 @@ def run():
         sess.run(my_variable_initializers)
 
         #Train NN using the train_nn function
-        train_nn(sess, epochs=10, data_folder=data_folder,image_shape=image_shape, batch_size=16,
+        train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
                  training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
                  train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
                  correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate)
