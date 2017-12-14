@@ -192,7 +192,6 @@ def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_la
     batch_size = 8
     data_generator = data_generator_function(batch_size)
     num_examples = int(math.floor(len(image_paths)/batch_size)*batch_size)
-    print("Num examples: ", num_examples)
     total_loss = 0
     for offset in range(0, num_examples, batch_size):
         X_batch, y_batch = next(data_generator)
