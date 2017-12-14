@@ -185,7 +185,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss)
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
-        logging.info("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
+        logging.info("Epoch %d: Training loss: %.4f,  Validation loss: %.4f" % (epoch + 1, training_loss, validation_loss))
 
     print("Saving the model")
     if "saved_model" in os.listdir(os.getcwd()):
