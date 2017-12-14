@@ -11,6 +11,10 @@ from glob import glob
 from sklearn.model_selection import train_test_split
 import shutil
 import argparse
+import logging
+from datetime import datetime
+
+logging.basicConfig(filename='training.log',level=logging.INFO)
 
 
 # Check TensorFlow Version
@@ -121,8 +125,9 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    logits = tf.reshape(nn_last_layer, (-1, num_classes))
-    correct_label = tf.reshape(correct_label, (-1, num_classes))
+    # logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    # correct_label = tf.reshape(correct_label, (-1, num_classes))
+    logits = nn_last_layer
 
     cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label))
 
@@ -180,6 +185,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss)
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
+        logging.info("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
 
     print("Saving the model")
     if "saved_model" in os.listdir(os.getcwd()):
@@ -203,6 +209,9 @@ def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_la
 
 
 def run():
+    logging.info('------------------- START ------------------------')
+    logging.info('%s: Training begins' % datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'))
+
     parser = argparse.ArgumentParser(description='Remote Driving')
     parser.add_argument(
         '-n',
@@ -250,6 +259,8 @@ def run():
     print("learning rate:", LEARNING_RATE)
     print("Keep prob:", KEEP_PROB)
     print("Batch size:", batch_size)
+
+    logging.info('Num epochs: %d, learning rate: %.6f, keep prob: %.2f, batch size: %d' % (num_epochs, LEARNING_RATE, KEEP_PROB, batch_size))
 
 
     num_classes = 2
@@ -304,6 +315,8 @@ def run():
         #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
 
         # OPTIONAL: Apply the trained model to a video
+
+    logging.info('-------------------- END ----------------------')
 
 
 if __name__ == '__main__':
