@@ -2,3 +2,7 @@ INFO:root:------------------- START ------------------------
 INFO:root:12/14/2017 07:18:03 PM: Training begins
 INFO:root:Num epochs: 1, learning rate: 0.000100, keep prob: 1.00, batch size: 16
 INFO:tensorflow:Restoring parameters from b'./data/vgg/variables/variables'
+INFO:root:------------------- START ------------------------
+INFO:root:12/14/2017 07:20:03 PM: Training begins
+INFO:root:Num epochs: 10, learning rate: 0.000080, keep prob: 1.00, batch size: 16
+INFO:tensorflow:Restoring parameters from b'./data/vgg/variables/variables'

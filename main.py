@@ -179,7 +179,6 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
                 keep_prob: KEEP_PROB,
                 learning_rate: LEARNING_RATE
             })
-            # print("Batch loss: ", loss)
         validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss)
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
