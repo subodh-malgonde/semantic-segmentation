@@ -73,6 +73,9 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     vgg_layer4_out = tf.stop_gradient(vgg_layer4_out)
     vgg_layer3_out = tf.stop_gradient(vgg_layer3_out)
 
+    vgg_layer3_out = tf.multiply(vgg_layer3_out, 0.0001)
+    vgg_layer4_out = tf.multiply(vgg_layer4_out, 0.01)
+
     new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name='new_layer7_1x1_out')
     new_layer7_1x1_out = tf.Print(new_layer7_1x1_out, [tf.shape(new_layer7_1x1_out)], message="Layer 7 shape before: ", first_n=1)
