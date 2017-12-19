@@ -155,6 +155,13 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
 # tests.test_optimize(optimize)
 
+def save_model(sess):
+    print("Saving the model")
+    if "saved_model" in os.listdir(os.getcwd()):
+        shutil.rmtree("./saved_model")
+    builder = tf.saved_model.builder.SavedModelBuilder("./saved_model")
+    builder.add_meta_graph_and_variables(sess, ["vgg16"])
+    builder.save()
 
 def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_paths, validation_image_paths, train_op,
              cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate):
@@ -197,12 +204,10 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
         logging.info("Epoch %d: Training loss: %.4f,  Validation loss: %.4f" % (epoch + 1, training_loss, validation_loss))
 
-    print("Saving the model")
-    if "saved_model" in os.listdir(os.getcwd()):
-        shutil.rmtree("./saved_model")
-    builder = tf.saved_model.builder.SavedModelBuilder("./saved_model")
-    builder.add_meta_graph_and_variables(sess, ["vgg16"])
-    builder.save()
+        if epoch % 10 == 0 and epoch > 0:
+            save_model()
+
+    save_model()
 
 
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op):
