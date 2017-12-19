@@ -136,9 +136,10 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     # correct_label = tf.reshape(correct_label, (-1, num_classes))
     logits = nn_last_layer
 
-    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label))
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label),
+                                        name="cross_entropy")
 
-    opt = tf.train.AdagradOptimizer(learning_rate=learning_rate, name="Adagrad" + str(random.randint(1,1001)))
+    opt = tf.train.AdagradOptimizer(learning_rate=learning_rate)
 
     if TRANSFER_LEARNING_MODE:
 
@@ -146,11 +147,11 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
         for variable in tf.trainable_variables():
             if "new_" in variable.name:
                 trainable_variables.append(variable)
-        train_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables)
+        training_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables, name="training_op")
     else:
-        train_op = opt.minimize(cross_entropy_loss)
+        training_op = opt.minimize(cross_entropy_loss, name="training_op")
 
-    return logits, train_op, cross_entropy_loss
+    return logits, training_op, cross_entropy_loss
 
 # tests.test_optimize(optimize)
 
@@ -311,9 +312,6 @@ def run():
             image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
 
             training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
-            correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,))
-
-            learning_rate = tf.placeholder(tf.float32, [])
 
             # OPTIONAL: Augment Images for better results
             #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
@@ -329,11 +327,17 @@ def run():
 
             if CONTINUE_TRAINING:
                 logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
-                output_tensor = tf.get_default_graph().get_operation_by_name(logits_operation_name).outputs[0]
+                graph = tf.get_default_graph()
+                output_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
+                train_op = graph.get_operation_by_name("training_op")
+                cross_entropy_loss = graph.get_operation_by_name("cross_entropy")
+                correct_label = graph.get_tensor_by_name("correct_label")
+                learning_rate = graph.get_tensor_by_name("learning_rate")
             else:
                 output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
-
-            logits, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
+                correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
+                learning_rate = tf.placeholder(tf.float32, [], name="learning_rate")
+                output_tensor, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
 
             if not CONTINUE_TRAINING:
                 if TRANSFER_LEARNING_MODE:

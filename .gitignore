@@ -2,6 +2,8 @@
 .DS_Store
 .idea/
 saved_model/
+saved_model1/
+runs/
 *.pyc
 *.tar.gz
 .ckpt
