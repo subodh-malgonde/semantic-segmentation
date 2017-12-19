@@ -331,8 +331,8 @@ def run():
                 output_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
                 train_op = graph.get_operation_by_name("training_op")
                 cross_entropy_loss = graph.get_operation_by_name("cross_entropy")
-                correct_label = graph.get_tensor_by_name("correct_label")
-                learning_rate = graph.get_tensor_by_name("learning_rate")
+                correct_label = graph.get_tensor_by_name("correct_label:0")
+                learning_rate = graph.get_tensor_by_name("learning_rate:0")
             else:
                 output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
                 correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
