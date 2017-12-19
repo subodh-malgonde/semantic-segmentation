@@ -328,7 +328,7 @@ def run():
 
             if CONTINUE_TRAINING:
                 logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
-                output_tensor = tf.get_default_graph().graph.get_operation_by_name(logits_operation_name).outputs[0]
+                output_tensor = tf.get_default_graph().get_operation_by_name(logits_operation_name).outputs[0]
             else:
                 output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
 
