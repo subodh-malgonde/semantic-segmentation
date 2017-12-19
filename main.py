@@ -205,9 +205,9 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         logging.info("Epoch %d: Training loss: %.4f,  Validation loss: %.4f" % (epoch + 1, training_loss, validation_loss))
 
         if epoch % 10 == 0 and epoch > 0:
-            save_model()
+            save_model(sess)
 
-    save_model()
+    save_model(sess)
 
 
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op):
