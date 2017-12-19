@@ -304,8 +304,10 @@ def run():
 
         logits, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
 
-        my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
-        sess.run(my_variable_initializers)
+        # my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
+        # sess.run(my_variable_initializers)
+
+        sess.run(tf.global_variables_initializer())
 
         #Train NN using the train_nn function
         train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
