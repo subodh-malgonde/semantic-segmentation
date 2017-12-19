@@ -23,6 +23,7 @@ print('TensorFlow Version: {}'.format(tf.__version__))
 
 KEEP_PROB = 0.6
 LEARNING_RATE = 0.00005
+TRANSFER_LEARNING_MODE = False
 
 # Check for a GPU
 if not tf.test.gpu_device_name():
@@ -69,9 +70,10 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    # vgg_layer7_out = tf.stop_gradient(vgg_layer7_out)
-    # vgg_layer4_out = tf.stop_gradient(vgg_layer4_out)
-    # vgg_layer3_out = tf.stop_gradient(vgg_layer3_out)
+    if TRANSFER_LEARNING_MODE:
+        vgg_layer7_out = tf.stop_gradient(vgg_layer7_out)
+        vgg_layer4_out = tf.stop_gradient(vgg_layer4_out)
+        vgg_layer3_out = tf.stop_gradient(vgg_layer3_out)
 
     vgg_layer3_out = tf.multiply(vgg_layer3_out, 0.0001)
     vgg_layer4_out = tf.multiply(vgg_layer4_out, 0.01)
@@ -136,13 +138,15 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
     opt = tf.train.AdagradOptimizer(learning_rate=learning_rate)
 
-    # trainable_variables = []
-    # for variable in tf.trainable_variables():
-    #     if "new_" in variable.name:
-    #         trainable_variables.append(variable)
-    # train_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables)
+    if TRANSFER_LEARNING_MODE:
 
-    train_op = opt.minimize(cross_entropy_loss)
+        trainable_variables = []
+        for variable in tf.trainable_variables():
+            if "new_" in variable.name:
+                trainable_variables.append(variable)
+        train_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables)
+    else:
+        train_op = opt.minimize(cross_entropy_loss)
 
     return logits, train_op, cross_entropy_loss
 
@@ -173,6 +177,8 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
 
     samples_per_epoch = len(training_image_paths)
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
+
+    print("Actual learning rate is", LEARNING_RATE)
 
     for epoch in range(epochs):
         for batch in tqdm(range(batches_per_epoch)):
@@ -212,6 +218,10 @@ def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_la
 
 
 def run():
+    global LEARNING_RATE
+    global KEEP_PROB
+    global TRANSFER_LEARNING_MODE
+
     logging.info('------------------- START ------------------------')
     logging.info('%s: Training begins' % datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'))
 
@@ -251,17 +261,24 @@ def run():
         help='Batch size.'
     )
 
+    parser.add_argument("-t", "--test", help="Test mode on", action="store_true")
+    parser.add_argument("-tlo", "--transfer_learn_off", help="Transfer learning mode off", action="store_true")
+
     args = parser.parse_args()
 
     num_epochs = args.num_epochs
     LEARNING_RATE = args.learning_rate
     KEEP_PROB = args.keep_probability
     batch_size = args.batch_size
+    testing_mode = args.test
+    TRANSFER_LEARNING_MODE = False if args.transfer_learn_off else True
 
     print("Number of epochs:", num_epochs)
     print("learning rate:", LEARNING_RATE)
     print("Keep prob:", KEEP_PROB)
     print("Batch size:", batch_size)
+    print("Training mode:", "OFF" if testing_mode else "ON")
+    print("Trasfer learning mode:", "ON" if TRANSFER_LEARNING_MODE else "OFF")
 
     logging.info('Num epochs: %d, learning rate: %.6f, keep prob: %.2f, batch size: %d' % (num_epochs, LEARNING_RATE, KEEP_PROB, batch_size))
 
@@ -281,39 +298,43 @@ def run():
 
     with tf.Session() as sess:
         # Path to vgg model
-        vgg_path = os.path.join(data_dir, 'vgg')
 
+        if not testing_mode:
+            vgg_path = os.path.join(data_dir, 'vgg')
 
-        data_folder = os.path.join(data_dir, 'data_road/training')
-        image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
+            data_folder = os.path.join(data_dir, 'data_road/training')
+            image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
 
-        training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
+            training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
 
-        # OPTIONAL: Augment Images for better results
-        #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
+            # OPTIONAL: Augment Images for better results
+            #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
-        #Build NN using load_vgg, layers, and optimize function
-        vgg_input_tensor, vgg_keep_prob_tensor, vgg_layer3_out_tensor,\
-        vgg_layer4_out_tensor, vgg_layer7_out_tensor = load_vgg(sess, vgg_path)
+            #Build NN using load_vgg, layers, and optimize function
+            vgg_input_tensor, vgg_keep_prob_tensor, vgg_layer3_out_tensor,\
+            vgg_layer4_out_tensor, vgg_layer7_out_tensor = load_vgg(sess, vgg_path)
 
-        output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
+            output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
 
-        correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,))
+            correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,))
 
-        learning_rate = tf.placeholder(tf.float32, [])
+            learning_rate = tf.placeholder(tf.float32, [])
 
-        logits, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
+            logits, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
 
-        # my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
-        # sess.run(my_variable_initializers)
+            # my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
+            # sess.run(my_variable_initializers)
 
-        sess.run(tf.global_variables_initializer())
+            sess.run(tf.global_variables_initializer())
 
-        #Train NN using the train_nn function
-        train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
-                 training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
-                 train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
-                 correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate)
+            #Train NN using the train_nn function
+            train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
+                     training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
+                     train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
+                     correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate)
+
+        else:
+            test_model()
 
 
         # TODO: Save inference data using helper.save_inference_samples
@@ -351,5 +372,4 @@ def test_model():
 
 
 if __name__ == '__main__':
-    # test_model()
     run()
