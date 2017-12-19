@@ -334,9 +334,8 @@ def run():
                 cross_entropy_loss = graph.get_operation_by_name("cross_entropy")
                 correct_label = graph.get_tensor_by_name("correct_label:0")
                 learning_rate = graph.get_tensor_by_name("learning_rate:0")
+                print(train_op)
                 print(cross_entropy_loss)
-                print(correct_label)
-                print(learning_rate)
             else:
                 output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
                 correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
