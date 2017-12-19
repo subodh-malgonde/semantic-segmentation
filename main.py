@@ -303,31 +303,34 @@ def run():
     #  https://www.cityscapes-dataset.com/
 
     with tf.Session() as sess:
-        # Path to vgg model
 
         if not testing_mode:
+            # Path to vgg model
+            data_folder = os.path.join(data_dir, 'data_road/training')
+            image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
+
+            training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
+            correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,))
+
+            learning_rate = tf.placeholder(tf.float32, [])
+
+            # OPTIONAL: Augment Images for better results
+            #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
+
             if CONTINUE_TRAINING:
                 vgg_path = './saved_model'
             else:
                 vgg_path = os.path.join(data_dir, 'vgg')
 
-            data_folder = os.path.join(data_dir, 'data_road/training')
-            image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
-
-            training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
-
-            # OPTIONAL: Augment Images for better results
-            #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
-
             #Build NN using load_vgg, layers, and optimize function
             vgg_input_tensor, vgg_keep_prob_tensor, vgg_layer3_out_tensor,\
             vgg_layer4_out_tensor, vgg_layer7_out_tensor = load_vgg(sess, vgg_path)
 
-            output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
-
-            correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,))
-
-            learning_rate = tf.placeholder(tf.float32, [])
+            if CONTINUE_TRAINING:
+                logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
+                output_tensor = tf.get_default_graph().graph.get_operation_by_name(logits_operation_name).outputs[0]
+            else:
+                output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
 
             logits, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
 
