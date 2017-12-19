@@ -181,9 +181,6 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     samples_per_epoch = len(training_image_paths)
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
 
-    print("Actual learning rate is", LEARNING_RATE)
-    print("Keep probability is", KEEP_PROB)
-
     for epoch in range(epochs):
         for batch in tqdm(range(batches_per_epoch)):
             X_batch , y_batch = next(training_batch_generator)
@@ -193,8 +190,6 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
                 keep_prob: KEEP_PROB,
                 learning_rate: LEARNING_RATE
             })
-            print("Batch loss:", loss)
-            print("Batch train_op:", _)
         validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss)
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
@@ -332,7 +327,7 @@ def run():
                 graph = tf.get_default_graph()
                 output_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
                 train_op = graph.get_operation_by_name("training_op")
-                cross_entropy_loss = graph.get_operation_by_name("cross_entropy")
+                cross_entropy_loss = graph.get_operation_by_name("cross_entropy").outputs[0]
                 correct_label = graph.get_tensor_by_name("correct_label:0")
                 learning_rate = graph.get_tensor_by_name("learning_rate:0")
             else:
