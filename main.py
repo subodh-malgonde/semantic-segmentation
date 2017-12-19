@@ -4,6 +4,7 @@ import helper
 import warnings
 from distutils.version import LooseVersion
 import project_tests as tests
+import random
 import time
 from tqdm import *
 import math
@@ -137,7 +138,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
     cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label))
 
-    opt = tf.train.AdagradOptimizer(learning_rate=learning_rate)
+    opt = tf.train.AdagradOptimizer(learning_rate=learning_rate, name="Adagrad" + str(random.randint(1,1001)))
 
     if TRANSFER_LEARNING_MODE:
 
