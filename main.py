@@ -24,6 +24,7 @@ print('TensorFlow Version: {}'.format(tf.__version__))
 KEEP_PROB = 0.6
 LEARNING_RATE = 0.00005
 TRANSFER_LEARNING_MODE = False
+CONTINUE_TRAINING = False
 
 # Check for a GPU
 if not tf.test.gpu_device_name():
@@ -179,6 +180,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
 
     print("Actual learning rate is", LEARNING_RATE)
+    print("Keep probability is", KEEP_PROB)
 
     for epoch in range(epochs):
         for batch in tqdm(range(batches_per_epoch)):
@@ -221,6 +223,7 @@ def run():
     global LEARNING_RATE
     global KEEP_PROB
     global TRANSFER_LEARNING_MODE
+    global CONTINUE_TRAINING
 
     logging.info('------------------- START ------------------------')
     logging.info('%s: Training begins' % datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'))
@@ -263,6 +266,7 @@ def run():
 
     parser.add_argument("-t", "--test", help="Test mode on", action="store_true")
     parser.add_argument("-tlo", "--transfer_learn_off", help="Transfer learning mode off", action="store_true")
+    parser.add_argument("-ct", "--continues_training", help="Continue from where you left off", action="store_true")
 
     args = parser.parse_args()
 
@@ -271,6 +275,7 @@ def run():
     KEEP_PROB = args.keep_probability
     batch_size = args.batch_size
     testing_mode = args.test
+    CONTINUE_TRAINING = args.continues_training
     TRANSFER_LEARNING_MODE = False if args.transfer_learn_off else True
 
     print("Number of epochs:", num_epochs)
@@ -279,6 +284,7 @@ def run():
     print("Batch size:", batch_size)
     print("Training mode:", "OFF" if testing_mode else "ON")
     print("Trasfer learning mode:", "ON" if TRANSFER_LEARNING_MODE else "OFF")
+    print("Continue training?:", "YES" if CONTINUE_TRAINING else "NO")
 
     logging.info('Num epochs: %d, learning rate: %.6f, keep prob: %.2f, batch size: %d' % (num_epochs, LEARNING_RATE, KEEP_PROB, batch_size))
 
@@ -300,7 +306,10 @@ def run():
         # Path to vgg model
 
         if not testing_mode:
-            vgg_path = os.path.join(data_dir, 'vgg')
+            if CONTINUE_TRAINING:
+                vgg_path = './saved_model'
+            else:
+                vgg_path = os.path.join(data_dir, 'vgg')
 
             data_folder = os.path.join(data_dir, 'data_road/training')
             image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
@@ -322,10 +331,12 @@ def run():
 
             logits, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
 
-            # my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
-            # sess.run(my_variable_initializers)
-
-            sess.run(tf.global_variables_initializer())
+            if not CONTINUE_TRAINING:
+                if TRANSFER_LEARNING_MODE:
+                    my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
+                    sess.run(my_variable_initializers)
+                else:
+                    sess.run(tf.global_variables_initializer())
 
             #Train NN using the train_nn function
             train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
@@ -346,13 +357,9 @@ def run():
 
 
 def test_model():
-    num_classes = 2
     image_shape = (160, 576)
     data_dir = './data'
     runs_dir = './runs'
-
-    vgg_path = os.path.join(data_dir, 'vgg')
-    data_folder = os.path.join(data_dir, 'data_road/training')
 
     with tf.Session() as sess:
         vgg_input_tensor_name = 'image_input:0'

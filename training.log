@@ -66,3 +66,16 @@ INFO:root:------------------- START ------------------------
 INFO:root:12/19/2017 11:56:21 AM: Training begins
 INFO:root:Num epochs: 1, learning rate: 0.000100, keep prob: 1.00, batch size: 16
 INFO:tensorflow:Restoring parameters from b'./data/vgg/variables/variables'
+INFO:root:------------------- START ------------------------
+INFO:root:12/19/2017 12:00:54 PM: Training begins
+INFO:root:Num epochs: 1, learning rate: 0.000100, keep prob: 1.00, batch size: 16
+INFO:tensorflow:Restoring parameters from b'./data/vgg/variables/variables'
+INFO:root:Epoch 1: Training loss: 0.6983,  Validation loss: 0.6982
+INFO:tensorflow:No assets to save.
+INFO:tensorflow:No assets to write.
+INFO:tensorflow:SavedModel written to: b'./saved_model/saved_model.pb'
+INFO:root:-------------------- END ----------------------
+INFO:root:------------------- START ------------------------
+INFO:root:12/19/2017 12:41:36 PM: Training begins
+INFO:root:Num epochs: 1, learning rate: 0.000100, keep prob: 1.00, batch size: 16
+INFO:tensorflow:Restoring parameters from b'./saved_model/variables/variables'
