@@ -194,6 +194,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
                 learning_rate: LEARNING_RATE
             })
             print("Batch loss:", loss)
+            print("Batch train_op:", _)
         validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss)
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
@@ -334,8 +335,6 @@ def run():
                 cross_entropy_loss = graph.get_operation_by_name("cross_entropy")
                 correct_label = graph.get_tensor_by_name("correct_label:0")
                 learning_rate = graph.get_tensor_by_name("learning_rate:0")
-                print(train_op)
-                print(cross_entropy_loss)
             else:
                 output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
                 correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
