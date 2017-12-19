@@ -69,9 +69,9 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    vgg_layer7_out = tf.stop_gradient(vgg_layer7_out)
-    vgg_layer4_out = tf.stop_gradient(vgg_layer4_out)
-    vgg_layer3_out = tf.stop_gradient(vgg_layer3_out)
+    # vgg_layer7_out = tf.stop_gradient(vgg_layer7_out)
+    # vgg_layer4_out = tf.stop_gradient(vgg_layer4_out)
+    # vgg_layer3_out = tf.stop_gradient(vgg_layer3_out)
 
     vgg_layer3_out = tf.multiply(vgg_layer3_out, 0.0001)
     vgg_layer4_out = tf.multiply(vgg_layer4_out, 0.01)
@@ -136,12 +136,13 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
     opt = tf.train.AdagradOptimizer(learning_rate=learning_rate)
 
-    trainable_variables = []
-    for variable in tf.trainable_variables():
-        if "new_" in variable.name:
-            trainable_variables.append(variable)
+    # trainable_variables = []
+    # for variable in tf.trainable_variables():
+    #     if "new_" in variable.name:
+    #         trainable_variables.append(variable)
+    # train_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables)
 
-    train_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables)
+    train_op = opt.minimize(cross_entropy_loss)
 
     return logits, train_op, cross_entropy_loss
 
@@ -321,5 +322,32 @@ def run():
     logging.info('-------------------- END ----------------------')
 
 
+def test_model():
+    num_classes = 2
+    image_shape = (160, 576)
+    data_dir = './data'
+    runs_dir = './runs'
+
+    vgg_path = os.path.join(data_dir, 'vgg')
+    data_folder = os.path.join(data_dir, 'data_road/training')
+
+    with tf.Session() as sess:
+        vgg_input_tensor_name = 'image_input:0'
+        vgg_keep_prob_tensor_name = 'keep_prob:0'
+
+        logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
+
+        tf.saved_model.loader.load(sess, ["vgg16"], "./saved_model")
+
+        graph = tf.get_default_graph()
+        vgg_input_tensor = graph.get_tensor_by_name(vgg_input_tensor_name)
+        vgg_keep_prob_tensor = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+
+        logits_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
+        helper.save_inference_samples(runs_dir=runs_dir, data_dir=data_dir, sess=sess,image_shape=image_shape,
+                                      logits=logits_tensor, keep_prob=vgg_keep_prob_tensor, input_image=vgg_input_tensor)
+
+
 if __name__ == '__main__':
+    # test_model()
     run()
