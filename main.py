@@ -12,11 +12,8 @@ from glob import glob
 from sklearn.model_selection import train_test_split
 import shutil
 import argparse
-import logging
 from datetime import datetime
 import pickle
-
-logging.basicConfig(filename='training.log',level=logging.INFO)
 
 
 # Check TensorFlow Version
@@ -240,7 +237,6 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         training_accuracy_metrics.append(training_accuracy)
 
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
-        logging.info("Epoch %d: Training loss: %.4f,  Validation loss: %.4f" % (epoch + 1, training_loss, validation_loss))
 
         if epoch % 10 == 0 and epoch > 0:
             save_model(sess, training_loss_metrics, validation_loss_metrics, training_accuracy_metrics,
@@ -249,7 +245,9 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     save_model(sess, training_loss_metrics, validation_loss_metrics, training_accuracy_metrics,
                validation_accuracy_metrics)
 
+
 tests.test_train_nn(train_nn)
+
 
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, accuracy_op, is_training):
     data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths, augment=False)
@@ -272,9 +270,6 @@ def run():
     global KEEP_PROB
     global TRANSFER_LEARNING_MODE
     global CONTINUE_TRAINING
-
-    logging.info('------------------- START ------------------------')
-    logging.info('%s: Training begins' % datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'))
 
     parser = argparse.ArgumentParser(description='Remote Driving')
     parser.add_argument(
@@ -330,12 +325,9 @@ def run():
     print("learning rate:", LEARNING_RATE)
     print("Keep prob:", KEEP_PROB)
     print("Batch size:", batch_size)
-    print("Training mode:", "OFF" if testing_mode else "ON")
-    print("Trasfer learning mode:", "ON" if TRANSFER_LEARNING_MODE else "OFF")
-    print("Continue training?:", "YES" if CONTINUE_TRAINING else "NO")
-
-    logging.info('Num epochs: %d, learning rate: %.6f, keep prob: %.2f, batch size: %d' % (num_epochs, LEARNING_RATE, KEEP_PROB, batch_size))
-
+    print("Training mode:", "True" if testing_mode else "False")
+    print("Trasfer learning mode:", "True" if TRANSFER_LEARNING_MODE else "False")
+    print("Continue training?:", "True" if CONTINUE_TRAINING else "False")
 
     num_classes = 2
     image_shape = (160, 576)
@@ -413,8 +405,6 @@ def run():
 
         # OPTIONAL: Apply the trained model to a video
 
-    logging.info('-------------------- END ----------------------')
-
 
 def test_model():
     image_shape = (160, 576)
@@ -424,7 +414,6 @@ def test_model():
     with tf.Session() as sess:
         vgg_input_tensor_name = 'image_input:0'
         vgg_keep_prob_tensor_name = 'keep_prob:0'
-
 
         logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
 
