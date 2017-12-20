@@ -12,3 +12,8 @@ data/
 *.zip
 testing.py
 *.pem
+.ipynb_checkpoints/
+validation_loss_history
+training_loss_history
+validation_accuracy_history
+training_accuracy_history

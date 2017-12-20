@@ -152,12 +152,14 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    # logits = tf.reshape(nn_last_layer, (-1, num_classes))
-    # correct_label = tf.reshape(correct_label, (-1, num_classes))
-    logits = nn_last_layer
+    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    correct_label = tf.reshape(correct_label, (-1, num_classes))
 
     cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label),
                                         name="cross_entropy")
+
+    is_correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(correct_label, 1))
+    accuracy_op = tf.reduce_mean(tf.cast(is_correct_prediction, tf.float32), name="accuracy_op")
 
     opt = tf.train.AdagradOptimizer(learning_rate=learning_rate)
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -173,11 +175,12 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
         with tf.control_dependencies(update_ops):
             training_op = opt.minimize(cross_entropy_loss, name="training_op")
 
-    return logits, training_op, cross_entropy_loss
+    return logits, training_op, cross_entropy_loss, accuracy_op
 
 # tests.test_optimize(optimize)
 
-def save_model(sess, training_loss_metrics, validation_loss_metrics):
+def save_model(sess, training_loss_metrics, validation_loss_metrics,
+               training_accuracy_history, validation_accuracy_history):
     print("Saving the model")
     if "saved_model" in os.listdir(os.getcwd()):
         shutil.rmtree("./saved_model")
@@ -185,11 +188,21 @@ def save_model(sess, training_loss_metrics, validation_loss_metrics):
     builder.add_meta_graph_and_variables(sess, ["vgg16"])
     builder.save()
 
-    pickle.dump(training_loss_metrics, open("training_loss_metrics", "w"))
-    pickle.dump(validation_loss_metrics, open("validation_loss_metrics", "w"))
+    with open('training_loss_history', 'wb') as f:
+        pickle.dump(training_loss_metrics, f)
+
+    with open('validation_loss_history', 'wb') as f:
+        pickle.dump(validation_loss_metrics, f)
+
+
+    with open('training_accuracy_history', 'wb') as f:
+        pickle.dump(training_accuracy_history, f)
+
+    with open('validation_accuracy_history', 'wb') as f:
+        pickle.dump(validation_accuracy_history, f)
 
 def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_paths, validation_image_paths, train_op,
-             cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate, is_training):
+             cross_entropy_loss, accuracy_op, input_image, correct_label, keep_prob, learning_rate, is_training):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -214,7 +227,9 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
 
     training_loss_metrics = []
+    training_accuracy_metrics = []
     validation_loss_metrics = []
+    validation_accuracy_metrics = []
 
     for epoch in range(epochs):
         for batch in tqdm(range(batches_per_epoch)):
@@ -226,33 +241,41 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
                 learning_rate: LEARNING_RATE,
                 is_training: True
             })
-        validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
-                                   keep_prob, cross_entropy_loss, is_training)
+        validation_loss, validation_accuracy = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
+                                   keep_prob, cross_entropy_loss, accuracy_op, is_training)
         validation_loss_metrics.append(validation_loss)
-        training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
-                                   keep_prob, cross_entropy_loss, is_training)
+        validation_accuracy_metrics.append(validation_accuracy)
+
+        training_loss, training_accuracy = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
+                                   keep_prob, cross_entropy_loss, accuracy_op, is_training)
         training_loss_metrics.append(training_loss)
+        training_accuracy_metrics.append(training_accuracy)
+
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
         logging.info("Epoch %d: Training loss: %.4f,  Validation loss: %.4f" % (epoch + 1, training_loss, validation_loss))
 
         if epoch % 10 == 0 and epoch > 0:
-            save_model(sess, training_loss_metrics, validation_loss_metrics)
+            save_model(sess, training_loss_metrics, validation_loss_metrics, training_accuracy_metrics,
+                       validation_accuracy_metrics)
 
-    save_model(sess, training_loss_metrics, validation_loss_metrics)
+    save_model(sess, training_loss_metrics, validation_loss_metrics, training_accuracy_metrics,
+               validation_accuracy_metrics)
 
 
-def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, is_training):
+def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, accuracy_op, is_training):
     data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths, augment=False)
     batch_size = 8
     data_generator = data_generator_function(batch_size)
     num_examples = int(math.floor(len(image_paths)/batch_size)*batch_size)
     total_loss = 0
+    total_acc = 0
     for offset in range(0, num_examples, batch_size):
         X_batch, y_batch = next(data_generator)
-        loss = sess.run([loss_op], feed_dict={input_image: X_batch, correct_label: y_batch, keep_prob: 1.0,
+        loss, accuracy = sess.run([loss_op, accuracy_op], feed_dict={input_image: X_batch, correct_label: y_batch, keep_prob: 1.0,
                                               is_training: False})
-        total_loss += (loss[0] * X_batch.shape[0])
-    return total_loss/num_examples
+        total_loss += (loss * X_batch.shape[0])
+        total_acc += (accuracy * X_batch.shape[0])
+    return total_loss/num_examples, total_acc/num_examples
 
 
 def run():
@@ -365,6 +388,7 @@ def run():
                 output_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
                 train_op = graph.get_operation_by_name("training_op")
                 cross_entropy_loss = graph.get_operation_by_name("cross_entropy").outputs[0]
+                accuracy_op = graph.get_operation_by_name("accuracy_op").outputs[0]
                 correct_label = graph.get_tensor_by_name("correct_label:0")
                 learning_rate = graph.get_tensor_by_name("learning_rate:0")
                 is_training_placeholder = graph.get_tensor_by_name("is_training:0")
@@ -374,7 +398,7 @@ def run():
                                        num_classes, is_training_placeholder)
                 correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
                 learning_rate = tf.placeholder(tf.float32, [], name="learning_rate")
-                output_tensor, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate,
+                output_tensor, train_op, cross_entropy_loss, accuracy_op = optimize(output_tensor, correct_label, learning_rate,
                                                                        num_classes)
 
             if not CONTINUE_TRAINING:
@@ -388,7 +412,7 @@ def run():
             train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
                      training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
                      train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
-                     correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate,
+                     correct_label=correct_label, accuracy_op=accuracy_op, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate,
                      is_training=is_training_placeholder)
 
         else:
