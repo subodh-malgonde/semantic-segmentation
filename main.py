@@ -302,7 +302,7 @@ def run():
     print("learning rate:", LEARNING_RATE)
     print("Keep prob:", KEEP_PROB)
     print("Batch size:", batch_size)
-    print("Training mode:", "True" if testing_mode else "False")
+    print("Training mode:", "False" if testing_mode else "True")
     print("Trasfer learning mode:", "True" if TRANSFER_LEARNING_MODE else "False")
     print("Continue training?:", "True" if CONTINUE_TRAINING else "False")
 

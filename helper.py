@@ -67,7 +67,7 @@ def augment_brightness_camera_images(image):
     image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
     # randomly generate the brightness reduction factor
     # Add a constant so that it prevents the image from being completely dark
-    random_bright = .25+np.random.uniform()
+    random_bright = np.random.uniform(low=0.7, high=1.2)
     # Apply the brightness reduction to the V channel
     image1[:,:,2] = image1[:,:,2]*random_bright
     # convert to RBG again
@@ -105,8 +105,7 @@ def gen_batch_function(data_folder, image_shape, image_paths, augment=False):
                     gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
 
                     if augment:
-                        # image = augment_brightness_camera_images(image)
-
+                        image = augment_brightness_camera_images(image)
                         flip_prob = np.random.random()
                         if flip_prob > 0.5:
                             # flip the images
