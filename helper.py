@@ -58,6 +58,21 @@ def maybe_download_pretrained_vgg(data_dir):
         # Remove zip file to save space
         os.remove(os.path.join(vgg_path, vgg_filename))
 
+def augment_brightness_camera_images(image):
+    '''
+    :param image: Input image
+    :return: output image with reduced brightness
+    '''
+    # convert to HSV so that its easy to adjust brightness
+    image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
+    # randomly generate the brightness reduction factor
+    # Add a constant so that it prevents the image from being completely dark
+    random_bright = .25+np.random.uniform()
+    # Apply the brightness reduction to the V channel
+    image1[:,:,2] = image1[:,:,2]*random_bright
+    # convert to RBG again
+    image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
+    return image1
 
 def gen_batch_function(data_folder, image_shape, image_paths):
     """
@@ -88,6 +103,8 @@ def gen_batch_function(data_folder, image_shape, image_paths):
 
                     image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
                     gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
+
+                    image = augment_brightness_camera_images(image)
 
                     flip_prob = np.random.random()
                     if flip_prob > 0.5:
