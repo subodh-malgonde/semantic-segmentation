@@ -13,6 +13,7 @@ data/
 testing.py
 *.pem
 .ipynb_checkpoints/
+training.log
 validation_loss_history
 training_loss_history
 validation_accuracy_history
