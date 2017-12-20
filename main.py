@@ -202,7 +202,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     # TODO: Implement function
 
     # Create function to get batches
-    get_batches_fn_training = helper.gen_batch_function(data_folder, image_shape, training_image_paths)
+    get_batches_fn_training = helper.gen_batch_function(data_folder, image_shape, training_image_paths, augment=True)
 
     training_batch_generator = get_batches_fn_training(batch_size)
 
@@ -233,7 +233,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
 
 
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, is_training):
-    data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths)
+    data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths, augment=False)
     batch_size = 8
     data_generator = data_generator_function(batch_size)
     num_examples = int(math.floor(len(image_paths)/batch_size)*batch_size)

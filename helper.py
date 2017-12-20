@@ -74,7 +74,7 @@ def augment_brightness_camera_images(image):
     image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
     return image1
 
-def gen_batch_function(data_folder, image_shape, image_paths):
+def gen_batch_function(data_folder, image_shape, image_paths, augment=False):
     """
     Generate function to create batches of training data
     :param data_folder: Path to folder that contains all the datasets
@@ -104,13 +104,14 @@ def gen_batch_function(data_folder, image_shape, image_paths):
                     image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
                     gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
 
-                    image = augment_brightness_camera_images(image)
+                    if augment:
+                        image = augment_brightness_camera_images(image)
 
-                    flip_prob = np.random.random()
-                    if flip_prob > 0.5:
-                        # flip the images
-                        image = cv2.flip(image, 1)
-                        gt_image = cv2.flip(gt_image, 1)
+                        flip_prob = np.random.random()
+                        if flip_prob > 0.5:
+                            # flip the images
+                            image = cv2.flip(image, 1)
+                            gt_image = cv2.flip(gt_image, 1)
 
                     gt_bg = np.all(gt_image == background_color, axis=2)
                     gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
