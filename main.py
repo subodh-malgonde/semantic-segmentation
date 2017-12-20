@@ -252,7 +252,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         validation_accuracy_metrics.append(validation_accuracy)
 
         training_loss, training_accuracy = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
-                                   keep_prob, cross_entropy_loss, accuracy_op), is_training
+                                   keep_prob, cross_entropy_loss, accuracy_op, is_training)
         training_loss_metrics.append(training_loss)
         training_accuracy_metrics.append(training_accuracy)
 
