@@ -23,8 +23,8 @@ logging.basicConfig(filename='training.log',level=logging.INFO)
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
 print('TensorFlow Version: {}'.format(tf.__version__))
 
-KEEP_PROB = 0.6
-LEARNING_RATE = 0.00005
+KEEP_PROB = 1.0
+LEARNING_RATE = 0.06
 TRANSFER_LEARNING_MODE = False
 CONTINUE_TRAINING = False
 
@@ -61,6 +61,7 @@ def load_vgg(sess, vgg_path):
 
     return vgg_input_tensor, vgg_keep_prob_tensor, vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor
 
+
 tests.test_load_vgg(load_vgg, tf)
 
 
@@ -87,24 +88,18 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes, is_train
 
     new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name='new_layer7_1x1_out')
-    new_layer7_1x1_out = tf.Print(new_layer7_1x1_out, [tf.shape(new_layer7_1x1_out)], message="Layer 7 shape before: ", first_n=1)
 
     new_layer7_1x1_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters=num_classes, kernel_size=(4, 4),
                                                           strides=(4, 4), name='new_layer7_1x1_out_upsampled')
-    new_layer7_1x1_upsampled = tf.Print(new_layer7_1x1_upsampled, [tf.shape(new_layer7_1x1_upsampled)],
-                                        message="Layer 7 shape after: ", first_n=1)
 
     new_layer7_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer7_1x1_upsampled, name="new_layer7_1x1_upsampled_bn",
                                                           training=is_training)
 
     new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer4_1x1_out")
-    new_layer4_1x1_out = tf.Print(new_layer4_1x1_out, [tf.shape(new_layer4_1x1_out)], message="Layer 4 shape before: ", first_n=1)
 
     new_layer4_1x1_upsampled = tf.layers.conv2d_transpose(new_layer4_1x1_out, filters=num_classes, kernel_size=(3, 3),
                                                       strides=(2, 2), name="new_layer4_1x1_upsampled", padding='same')
-    new_layer4_1x1_upsampled = tf.Print(new_layer4_1x1_upsampled, [tf.shape(new_layer4_1x1_upsampled)], message="Layer 4 shape after: ",
-                                    first_n=1)
 
     new_layer4_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer4_1x1_upsampled,
                                                                 name="new_layer4_1x1_upsampled_bn",
@@ -112,8 +107,6 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes, is_train
 
     new_layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer3_1x1_out")
-
-    new_layer3_1x1_out = tf.Print(new_layer3_1x1_out, [tf.shape(new_layer3_1x1_out)], message="Layer 3 shape: ", first_n=1)
 
     new_layer3_1x1_out_bn = tf.layers.batch_normalization(new_layer3_1x1_out,
                                                                 name="new_layer3_1x1_upsampled_bn",
@@ -125,18 +118,12 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes, is_train
     new_final_layer_upsampled_4x = tf.layers.conv2d_transpose(out, filters=num_classes, kernel_size=(4, 4),
                                                       strides=(4, 4), name="new_final_layer_upsampled_4x")
 
-    new_final_layer_upsampled_4x = tf.Print(new_final_layer_upsampled_4x, [tf.shape(new_final_layer_upsampled_4x)],
-                                        message="final_layer_upsampled_4x  shape: ", first_n=1)
-
     new_final_layer_upsampled_4x_bn = tf.layers.batch_normalization(new_final_layer_upsampled_4x,
                                                                     name="new_final_layer_upsampled_4x_bn",
                                                                     training=is_training)
 
     new_final_layer_upsampled_8x = tf.layers.conv2d_transpose(new_final_layer_upsampled_4x_bn, filters=num_classes, kernel_size=(5, 5),
                                                        strides=(2, 2), name="new_final_layer_upsampled_8x", padding='same')
-
-    new_final_layer_upsampled_8x = tf.Print(new_final_layer_upsampled_8x, [tf.shape(new_final_layer_upsampled_8x)],
-                                        message="final_layer_upsampled_8x  shape: ", first_n=1)
 
     return new_final_layer_upsampled_8x
 
@@ -150,7 +137,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param correct_label: TF Placeholder for the correct label image
     :param learning_rate: TF Placeholder for the learning rate
     :param num_classes: Number of classes to classify
-    :return: Tuple of (logits, train_op, cross_entropy_loss)
+    :return: Tuple of (logits, train_op, cross_entropy_loss, accuracy_op)
     """
     cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=nn_last_layer, labels=correct_label),
                                         name="cross_entropy")
@@ -176,7 +163,9 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
     return nn_last_layer, training_op, cross_entropy_loss, accuracy_op
 
-# tests.test_optimize(optimize)
+
+tests.test_optimize(optimize)
+
 
 def save_model(sess, training_loss_metrics, validation_loss_metrics,
                training_accuracy_history, validation_accuracy_history):
@@ -193,12 +182,12 @@ def save_model(sess, training_loss_metrics, validation_loss_metrics,
     with open('validation_loss_history', 'wb') as f:
         pickle.dump(validation_loss_metrics, f)
 
-
     with open('training_accuracy_history', 'wb') as f:
         pickle.dump(training_accuracy_history, f)
 
     with open('validation_accuracy_history', 'wb') as f:
         pickle.dump(validation_accuracy_history, f)
+
 
 def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_paths, validation_image_paths, train_op,
              cross_entropy_loss, accuracy_op, input_image, correct_label, keep_prob, learning_rate, is_training):
@@ -260,6 +249,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     save_model(sess, training_loss_metrics, validation_loss_metrics, training_accuracy_metrics,
                validation_accuracy_metrics)
 
+tests.test_train_nn(train_nn)
 
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, accuracy_op, is_training):
     data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths, augment=False)
@@ -292,7 +282,7 @@ def run():
         '--num_epochs',
         type=int,
         nargs='?',
-        default=1,
+        default=30,
         help='Number of epochs.'
     )
     parser.add_argument(
@@ -300,7 +290,7 @@ def run():
         '--learning_rate',
         type=float,
         nargs='?',
-        default=0.0001,
+        default=0.06,
         help='Learning rate'
     )
 
