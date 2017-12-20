@@ -152,13 +152,12 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    logits = tf.reshape(nn_last_layer, (-1, num_classes))
-    correct_label = tf.reshape(correct_label, (-1, num_classes))
-
-    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label),
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=nn_last_layer, labels=correct_label),
                                         name="cross_entropy")
 
-    is_correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(correct_label, 1))
+    reshaped_logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    reshaped_correct_label = tf.reshape(correct_label, (-1, num_classes))
+    is_correct_prediction = tf.equal(tf.argmax(reshaped_logits, 1), tf.argmax(reshaped_correct_label, 1))
     accuracy_op = tf.reduce_mean(tf.cast(is_correct_prediction, tf.float32), name="accuracy_op")
 
     opt = tf.train.AdagradOptimizer(learning_rate=learning_rate)
@@ -175,7 +174,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
         with tf.control_dependencies(update_ops):
             training_op = opt.minimize(cross_entropy_loss, name="training_op")
 
-    return logits, training_op, cross_entropy_loss, accuracy_op
+    return nn_last_layer, training_op, cross_entropy_loss, accuracy_op
 
 # tests.test_optimize(optimize)
 
