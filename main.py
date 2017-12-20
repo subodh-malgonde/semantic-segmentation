@@ -14,6 +14,7 @@ import shutil
 import argparse
 import logging
 from datetime import datetime
+import pickle
 
 logging.basicConfig(filename='training.log',level=logging.INFO)
 
@@ -176,13 +177,16 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
 # tests.test_optimize(optimize)
 
-def save_model(sess):
+def save_model(sess, training_loss_metrics, validation_loss_metrics):
     print("Saving the model")
     if "saved_model" in os.listdir(os.getcwd()):
         shutil.rmtree("./saved_model")
     builder = tf.saved_model.builder.SavedModelBuilder("./saved_model")
     builder.add_meta_graph_and_variables(sess, ["vgg16"])
     builder.save()
+
+    pickle.dump(training_loss_metrics, open("training_loss_metrics", "w"))
+    pickle.dump(validation_loss_metrics, open("validation_loss_metrics", "w"))
 
 def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_paths, validation_image_paths, train_op,
              cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate, is_training):
@@ -209,6 +213,9 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     samples_per_epoch = len(training_image_paths)
     batches_per_epoch = math.floor(samples_per_epoch/batch_size)
 
+    training_loss_metrics = []
+    validation_loss_metrics = []
+
     for epoch in range(epochs):
         for batch in tqdm(range(batches_per_epoch)):
             X_batch , y_batch = next(training_batch_generator)
@@ -221,15 +228,17 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
             })
         validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss, is_training)
+        validation_loss_metrics.append(validation_loss)
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
                                    keep_prob, cross_entropy_loss, is_training)
+        training_loss_metrics.append(training_loss)
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
         logging.info("Epoch %d: Training loss: %.4f,  Validation loss: %.4f" % (epoch + 1, training_loss, validation_loss))
 
         if epoch % 10 == 0 and epoch > 0:
-            save_model(sess)
+            save_model(sess, training_loss_metrics, validation_loss_metrics)
 
-    save_model(sess)
+    save_model(sess, training_loss_metrics, validation_loss_metrics)
 
 
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, is_training):
