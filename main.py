@@ -293,7 +293,7 @@ def run():
         '--num_epochs',
         type=int,
         nargs='?',
-        default=50,
+        default=80,
         help='Number of epochs.'
     )
     parser.add_argument(
@@ -358,66 +358,61 @@ def run():
     # You'll need a GPU with at least 10 teraFLOPS to train on.
     #  https://www.cityscapes-dataset.com/
 
-    with tf.Session() as sess:
+    if not testing_mode:
+        with tf.Session() as sess:
+                # Path to vgg model
+                data_folder = os.path.join(data_dir, 'data_road/training')
+                image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
 
-        if not testing_mode:
-            # Path to vgg model
-            data_folder = os.path.join(data_dir, 'data_road/training')
-            image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
+                training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
 
-            training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
+                # OPTIONAL: Augment Images for better results
+                #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
-            # OPTIONAL: Augment Images for better results
-            #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
-
-            if CONTINUE_TRAINING:
-                vgg_path = './saved_model'
-            else:
-                vgg_path = os.path.join(data_dir, 'vgg')
-
-            #Build NN using load_vgg, layers, and optimize function
-            vgg_input_tensor, vgg_keep_prob_tensor, vgg_layer3_out_tensor,\
-            vgg_layer4_out_tensor, vgg_layer7_out_tensor = load_vgg(sess, vgg_path)
-
-            if CONTINUE_TRAINING:
-                logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
-                graph = tf.get_default_graph()
-                output_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
-                train_op = graph.get_operation_by_name("training_op")
-                cross_entropy_loss = graph.get_operation_by_name("cross_entropy").outputs[0]
-                accuracy_op = graph.get_operation_by_name("accuracy_op").outputs[0]
-                correct_label = graph.get_tensor_by_name("correct_label:0")
-                learning_rate = graph.get_tensor_by_name("learning_rate:0")
-                is_training_placeholder = graph.get_tensor_by_name("is_training:0")
-            else:
-                is_training_placeholder = tf.placeholder(tf.bool, name="is_training")
-                output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor,
-                                       is_training_placeholder, num_classes)
-                correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
-                learning_rate = tf.placeholder(tf.float32, [], name="learning_rate")
-                output_tensor, train_op, cross_entropy_loss, accuracy_op = optimize(output_tensor, correct_label, learning_rate,
-                                                                       num_classes)
-
-            if not CONTINUE_TRAINING:
-                if TRANSFER_LEARNING_MODE:
-                    my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
-                    sess.run(my_variable_initializers)
+                if CONTINUE_TRAINING:
+                    vgg_path = './saved_model'
                 else:
-                    sess.run(tf.global_variables_initializer())
+                    vgg_path = os.path.join(data_dir, 'vgg')
 
-            #Train NN using the train_nn function
-            train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
-                     training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
-                     train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
-                     correct_label=correct_label, accuracy_op=accuracy_op, keep_prob=vgg_keep_prob_tensor,
-                     learning_rate=learning_rate, is_training=is_training_placeholder)
+                #Build NN using load_vgg, layers, and optimize function
+                vgg_input_tensor, vgg_keep_prob_tensor, vgg_layer3_out_tensor,\
+                vgg_layer4_out_tensor, vgg_layer7_out_tensor = load_vgg(sess, vgg_path)
 
-        else:
-            test_model()
+                if CONTINUE_TRAINING:
+                    logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
+                    graph = tf.get_default_graph()
+                    output_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
+                    train_op = graph.get_operation_by_name("training_op")
+                    cross_entropy_loss = graph.get_operation_by_name("cross_entropy").outputs[0]
+                    accuracy_op = graph.get_operation_by_name("accuracy_op").outputs[0]
+                    correct_label = graph.get_tensor_by_name("correct_label:0")
+                    learning_rate = graph.get_tensor_by_name("learning_rate:0")
+                    is_training_placeholder = graph.get_tensor_by_name("is_training:0")
+                else:
+                    is_training_placeholder = tf.placeholder(tf.bool, name="is_training")
+                    output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor,
+                                           is_training_placeholder, num_classes)
+                    correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
+                    learning_rate = tf.placeholder(tf.float32, [], name="learning_rate")
+                    output_tensor, train_op, cross_entropy_loss, accuracy_op = optimize(output_tensor, correct_label, learning_rate,
+                                                                           num_classes)
 
+                if not CONTINUE_TRAINING:
+                    if TRANSFER_LEARNING_MODE:
+                        my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
+                        sess.run(my_variable_initializers)
+                    else:
+                        sess.run(tf.global_variables_initializer())
 
-        # TODO: Save inference data using helper.save_inference_samples
-        #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+                #Train NN using the train_nn function
+                train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
+                         training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
+                         train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
+                         correct_label=correct_label, accuracy_op=accuracy_op, keep_prob=vgg_keep_prob_tensor,
+                         learning_rate=learning_rate, is_training=is_training_placeholder)
+
+    else:
+        test_model()
 
         # OPTIONAL: Apply the trained model to a video
 
