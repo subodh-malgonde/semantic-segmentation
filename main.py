@@ -63,7 +63,7 @@ def load_vgg(sess, vgg_path):
 tests.test_load_vgg(load_vgg, tf)
 
 
-def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
+def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes, is_training):
     """
     Create the layers for a fully convolutional network.  Build skip-layers using the vgg layers.
     :param vgg_layer7_out: TF Tensor for VGG Layer 3 output
@@ -84,7 +84,9 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                       name='new_layer7_1x1_out')
     new_layer7_1x1_out = tf.Print(new_layer7_1x1_out, [tf.shape(new_layer7_1x1_out)], message="Layer 7 shape before: ", first_n=1)
 
-    new_layer7_1x1_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters=num_classes, kernel_size=(4, 4),
+    new_layer7_1x1_out_bn = tf.layers.batch_normalization(new_layer7_1x1_out, name="new_layer7_1x1_out_bn", training=is_training)
+
+    new_layer7_1x1_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out_bn, filters=num_classes, kernel_size=(4, 4),
                                                           strides=(4, 4), name='new_layer7_1x1_out_upsampled')
     new_layer7_1x1_upsampled = tf.Print(new_layer7_1x1_upsampled, [tf.shape(new_layer7_1x1_upsampled)],
                                         message="Layer 7 shape after: ", first_n=1)
@@ -140,16 +142,18 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
                                         name="cross_entropy")
 
     opt = tf.train.AdagradOptimizer(learning_rate=learning_rate)
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
     if TRANSFER_LEARNING_MODE:
-
         trainable_variables = []
         for variable in tf.trainable_variables():
             if "new_" in variable.name:
                 trainable_variables.append(variable)
-        training_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables, name="training_op")
+        with tf.control_dependencies(update_ops):
+           training_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables, name="training_op")
     else:
-        training_op = opt.minimize(cross_entropy_loss, name="training_op")
+        with tf.control_dependencies(update_ops):
+            training_op = opt.minimize(cross_entropy_loss, name="training_op")
 
     return logits, training_op, cross_entropy_loss
 
@@ -164,7 +168,7 @@ def save_model(sess):
     builder.save()
 
 def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_paths, validation_image_paths, train_op,
-             cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate):
+             cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate, is_training):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -195,12 +199,13 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
                 input_image: X_batch,
                 correct_label: y_batch,
                 keep_prob: KEEP_PROB,
-                learning_rate: LEARNING_RATE
+                learning_rate: LEARNING_RATE,
+                is_training: True
             })
         validation_loss = evaluate(validation_image_paths, data_folder, image_shape, sess, input_image, correct_label,
-                                   keep_prob, cross_entropy_loss)
+                                   keep_prob, cross_entropy_loss, is_training)
         training_loss = evaluate(training_image_paths, data_folder, image_shape, sess, input_image, correct_label,
-                                   keep_prob, cross_entropy_loss)
+                                   keep_prob, cross_entropy_loss, is_training)
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
         logging.info("Epoch %d: Training loss: %.4f,  Validation loss: %.4f" % (epoch + 1, training_loss, validation_loss))
 
@@ -210,7 +215,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
     save_model(sess)
 
 
-def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op):
+def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, is_training):
     data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths)
     batch_size = 8
     data_generator = data_generator_function(batch_size)
@@ -218,7 +223,8 @@ def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_la
     total_loss = 0
     for offset in range(0, num_examples, batch_size):
         X_batch, y_batch = next(data_generator)
-        loss = sess.run([loss_op], feed_dict={input_image: X_batch, correct_label: y_batch, keep_prob: 1.0})
+        loss = sess.run([loss_op], feed_dict={input_image: X_batch, correct_label: y_batch, keep_prob: 1.0,
+                                              is_training: False})
         total_loss += (loss[0] * X_batch.shape[0])
     return total_loss/num_examples
 
@@ -335,11 +341,15 @@ def run():
                 cross_entropy_loss = graph.get_operation_by_name("cross_entropy").outputs[0]
                 correct_label = graph.get_tensor_by_name("correct_label:0")
                 learning_rate = graph.get_tensor_by_name("learning_rate:0")
+                is_training_placeholder = graph.get_tensor_by_name("is_training:0")
             else:
-                output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor, num_classes)
+                is_training_placeholder = tf.placeholder(tf.bool, name="is_training")
+                output_tensor = layers(vgg_layer3_out_tensor, vgg_layer4_out_tensor, vgg_layer7_out_tensor,
+                                       num_classes, is_training_placeholder)
                 correct_label = tf.placeholder(tf.int8, (None,) + image_shape + (num_classes,), name="correct_label")
                 learning_rate = tf.placeholder(tf.float32, [], name="learning_rate")
-                output_tensor, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate, num_classes)
+                output_tensor, train_op, cross_entropy_loss = optimize(output_tensor, correct_label, learning_rate,
+                                                                       num_classes)
 
             if not CONTINUE_TRAINING:
                 if TRANSFER_LEARNING_MODE:
@@ -352,7 +362,8 @@ def run():
             train_nn(sess, epochs=num_epochs, data_folder=data_folder,image_shape=image_shape, batch_size=batch_size,
                      training_image_paths=training_image_paths, validation_image_paths=validation_image_paths,
                      train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=vgg_input_tensor,
-                     correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate)
+                     correct_label=correct_label, keep_prob=vgg_keep_prob_tensor, learning_rate=learning_rate,
+                     is_training=is_training_placeholder)
 
         else:
             test_model()
@@ -375,6 +386,7 @@ def test_model():
         vgg_input_tensor_name = 'image_input:0'
         vgg_keep_prob_tensor_name = 'keep_prob:0'
 
+
         logits_operation_name = "new_final_layer_upsampled_8x/BiasAdd"
 
         tf.saved_model.loader.load(sess, ["vgg16"], "./saved_model")
@@ -382,10 +394,12 @@ def test_model():
         graph = tf.get_default_graph()
         vgg_input_tensor = graph.get_tensor_by_name(vgg_input_tensor_name)
         vgg_keep_prob_tensor = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+        is_training_placeholder = graph.get_tensor_by_name("is_training:0")
 
         logits_tensor = graph.get_operation_by_name(logits_operation_name).outputs[0]
         helper.save_inference_samples(runs_dir=runs_dir, data_dir=data_dir, sess=sess,image_shape=image_shape,
-                                      logits=logits_tensor, keep_prob=vgg_keep_prob_tensor, input_image=vgg_input_tensor)
+                                      logits=logits_tensor, keep_prob=vgg_keep_prob_tensor,
+                                      input_image=vgg_input_tensor, is_training=is_training_placeholder)
 
 
 if __name__ == '__main__':
