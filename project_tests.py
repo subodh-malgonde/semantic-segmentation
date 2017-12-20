@@ -3,7 +3,7 @@ import os
 from copy import deepcopy
 from glob import glob
 from unittest import mock
-
+from sklearn.model_selection import train_test_split
 import numpy as np
 import tensorflow as tf
 
@@ -115,6 +115,15 @@ def test_optimize(optimize):
 def test_train_nn(train_nn):
     epochs = 1
     batch_size = 2
+    data_folder = "./data/data_road/training"
+    image_shape = (160, 576)
+
+    data_dir = './data'
+
+    data_folder = os.path.join(data_dir, 'data_road/training')
+    image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
+
+    training_image_paths, validation_image_paths = train_test_split(image_paths, test_size=0.2)
 
     def get_batches_fn(batach_size_parm):
         shape = [batach_size_parm, 2, 3, 3]
@@ -122,6 +131,8 @@ def test_train_nn(train_nn):
 
     train_op = tf.constant(0)
     cross_entropy_loss = tf.constant(10.11)
+    accuracy_op = tf.constant(0.11)
+    is_training = tf.constant(10.11)
     input_image = tf.placeholder(tf.float32, name='input_image')
     correct_label = tf.placeholder(tf.float32, name='correct_label')
     keep_prob = tf.placeholder(tf.float32, name='keep_prob')
@@ -130,14 +141,20 @@ def test_train_nn(train_nn):
         parameters = {
             'sess': sess,
             'epochs': epochs,
+            'data_folder': data_folder,
             'batch_size': batch_size,
-            'get_batches_fn': get_batches_fn,
+            'image_shape': image_shape,
+            'training_image_paths': training_image_paths,
+            'validation_image_paths': validation_image_paths,
             'train_op': train_op,
             'cross_entropy_loss': cross_entropy_loss,
+            'accuracy_op': accuracy_op,
             'input_image': input_image,
             'correct_label': correct_label,
             'keep_prob': keep_prob,
-            'learning_rate': learning_rate}
+            'learning_rate': learning_rate,
+            'is_training': is_training,
+        }
         _prevent_print(train_nn, parameters)
 
 
