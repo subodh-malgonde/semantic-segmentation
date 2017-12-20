@@ -143,8 +143,8 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 tests.test_optimize(optimize)
 
 
-def save_model(sess, training_loss_metrics, validation_loss_metrics,
-               training_accuracy_history, validation_accuracy_history):
+def save_model(sess, training_loss_metrics=None, validation_loss_metrics=None,
+               training_accuracy_history=None, validation_accuracy_history=None):
     print("Saving the model")
     if "saved_model" in os.listdir(os.getcwd()):
         shutil.rmtree("./saved_model")
@@ -152,17 +152,18 @@ def save_model(sess, training_loss_metrics, validation_loss_metrics,
     builder.add_meta_graph_and_variables(sess, ["vgg16"])
     builder.save()
 
-    with open('training_loss_history', 'wb') as f:
-        pickle.dump(training_loss_metrics, f)
+    if training_loss_metrics:
+        with open('training_loss_history', 'wb') as f:
+            pickle.dump(training_loss_metrics, f)
 
-    with open('validation_loss_history', 'wb') as f:
-        pickle.dump(validation_loss_metrics, f)
+        with open('validation_loss_history', 'wb') as f:
+            pickle.dump(validation_loss_metrics, f)
 
-    with open('training_accuracy_history', 'wb') as f:
-        pickle.dump(training_accuracy_history, f)
+        with open('training_accuracy_history', 'wb') as f:
+            pickle.dump(training_accuracy_history, f)
 
-    with open('validation_accuracy_history', 'wb') as f:
-        pickle.dump(validation_accuracy_history, f)
+        with open('validation_accuracy_history', 'wb') as f:
+            pickle.dump(validation_accuracy_history, f)
 
 
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, accuracy_op):
@@ -233,8 +234,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         print("Epoch %d:" % (epoch + 1), "Training loss: %.4f," % training_loss, "Validation loss: %.4f" % validation_loss)
 
         if epoch % 10 == 0 and epoch > 0:
-            save_model(sess, training_loss_metrics, validation_loss_metrics, training_accuracy_metrics,
-                       validation_accuracy_metrics)
+            save_model(sess)
 
     save_model(sess, training_loss_metrics, validation_loss_metrics, training_accuracy_metrics,
                validation_accuracy_metrics)
