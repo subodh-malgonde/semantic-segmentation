@@ -80,16 +80,21 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes, is_train
     vgg_layer3_out = tf.multiply(vgg_layer3_out, 0.0001)
     vgg_layer4_out = tf.multiply(vgg_layer4_out, 0.01)
 
+    vgg_layer3_out = tf.layers.batch_normalization(vgg_layer3_out, name="new_vgg_layer3_out", training=is_training)
+    vgg_layer4_out = tf.layers.batch_normalization(vgg_layer4_out, name="new_vgg_layer4_out", training=is_training)
+    vgg_layer7_out = tf.layers.batch_normalization(vgg_layer7_out, name="new_vgg_layer7_out", training=is_training)
+
     new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name='new_layer7_1x1_out')
     new_layer7_1x1_out = tf.Print(new_layer7_1x1_out, [tf.shape(new_layer7_1x1_out)], message="Layer 7 shape before: ", first_n=1)
 
-    new_layer7_1x1_out_bn = tf.layers.batch_normalization(new_layer7_1x1_out, name="new_layer7_1x1_out_bn", training=is_training)
-
-    new_layer7_1x1_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out_bn, filters=num_classes, kernel_size=(4, 4),
+    new_layer7_1x1_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters=num_classes, kernel_size=(4, 4),
                                                           strides=(4, 4), name='new_layer7_1x1_out_upsampled')
     new_layer7_1x1_upsampled = tf.Print(new_layer7_1x1_upsampled, [tf.shape(new_layer7_1x1_upsampled)],
                                         message="Layer 7 shape after: ", first_n=1)
+
+    new_layer7_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer7_1x1_upsampled, name="new_layer7_1x1_upsampled_bn",
+                                                          training=is_training)
 
     new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer4_1x1_out")
@@ -100,13 +105,21 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes, is_train
     new_layer4_1x1_upsampled = tf.Print(new_layer4_1x1_upsampled, [tf.shape(new_layer4_1x1_upsampled)], message="Layer 4 shape after: ",
                                     first_n=1)
 
+    new_layer4_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer4_1x1_upsampled,
+                                                                name="new_layer4_1x1_upsampled_bn",
+                                                                training=is_training)
+
     new_layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer3_1x1_out")
 
     new_layer3_1x1_out = tf.Print(new_layer3_1x1_out, [tf.shape(new_layer3_1x1_out)], message="Layer 3 shape: ", first_n=1)
 
-    out = tf.add(new_layer7_1x1_upsampled, new_layer4_1x1_upsampled)
-    out = tf.add(out, new_layer3_1x1_out)
+    new_layer3_1x1_out_bn = tf.layers.batch_normalization(new_layer3_1x1_out,
+                                                                name="new_layer3_1x1_upsampled_bn",
+                                                                training=is_training)
+
+    out = tf.add(new_layer7_1x1_upsampled_bn, new_layer4_1x1_upsampled_bn)
+    out = tf.add(out, new_layer3_1x1_out_bn)
 
     new_final_layer_upsampled_4x = tf.layers.conv2d_transpose(out, filters=num_classes, kernel_size=(4, 4),
                                                       strides=(4, 4), name="new_final_layer_upsampled_4x")
@@ -114,7 +127,11 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes, is_train
     new_final_layer_upsampled_4x = tf.Print(new_final_layer_upsampled_4x, [tf.shape(new_final_layer_upsampled_4x)],
                                         message="final_layer_upsampled_4x  shape: ", first_n=1)
 
-    new_final_layer_upsampled_8x = tf.layers.conv2d_transpose(new_final_layer_upsampled_4x, filters=num_classes, kernel_size=(5, 5),
+    new_final_layer_upsampled_4x_bn = tf.layers.batch_normalization(new_final_layer_upsampled_4x,
+                                                                    name="new_final_layer_upsampled_4x_bn",
+                                                                    training=is_training)
+
+    new_final_layer_upsampled_8x = tf.layers.conv2d_transpose(new_final_layer_upsampled_4x_bn, filters=num_classes, kernel_size=(5, 5),
                                                        strides=(2, 2), name="new_final_layer_upsampled_8x", padding='same')
 
     new_final_layer_upsampled_8x = tf.Print(new_final_layer_upsampled_8x, [tf.shape(new_final_layer_upsampled_8x)],
