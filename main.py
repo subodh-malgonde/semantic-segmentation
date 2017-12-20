@@ -164,6 +164,7 @@ def save_model(sess, training_loss_metrics, validation_loss_metrics,
     with open('validation_accuracy_history', 'wb') as f:
         pickle.dump(validation_accuracy_history, f)
 
+
 def evaluate(image_paths, data_folder, image_shape, sess, input_image,correct_label, keep_prob, loss_op, accuracy_op):
     data_generator_function = helper.gen_batch_function(data_folder, image_shape, image_paths, augment=False)
     batch_size = 8
@@ -239,7 +240,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
                validation_accuracy_metrics)
 
 
-tests.test_train_nn(train_nn)
+# tests.test_train_nn(train_nn)
 
 
 def run():
