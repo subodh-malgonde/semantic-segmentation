@@ -105,7 +105,7 @@ def gen_batch_function(data_folder, image_shape, image_paths, augment=False):
                     gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
 
                     if augment:
-                        image = augment_brightness_camera_images(image)
+                        # image = augment_brightness_camera_images(image)
 
                         flip_prob = np.random.random()
                         if flip_prob > 0.5:
