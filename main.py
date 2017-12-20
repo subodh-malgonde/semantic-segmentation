@@ -176,16 +176,16 @@ def save_model(sess, training_loss_metrics=None, validation_loss_metrics=None,
     if training_loss_metrics:
         if CONTINUE_TRAINING:
             with open("validation_loss_history", "rb") as f:
-                validation_loss_metrics += pickle.load(f)
+                validation_loss_metrics = pickle.load(f) + validation_loss_metrics
 
             with open("training_loss_history", "rb") as f:
-                training_loss_metrics += pickle.load(f)
+                training_loss_metrics = pickle.load(f) + training_loss_metrics
 
             with open("validation_accuracy_history", "rb") as f:
-                validation_accuracy_history += pickle.load(f)
+                validation_accuracy_history = pickle.load(f) + validation_accuracy_history
 
             with open("training_accuracy_history", "rb") as f:
-                training_accuracy_history += pickle.load(f)
+                training_accuracy_history = pickle.load(f) + training_accuracy_history
 
         with open('training_loss_history', 'wb') as f:
             pickle.dump(training_loss_metrics, f)
@@ -293,7 +293,7 @@ def run():
         '--num_epochs',
         type=int,
         nargs='?',
-        default=30,
+        default=50,
         help='Number of epochs.'
     )
     parser.add_argument(
