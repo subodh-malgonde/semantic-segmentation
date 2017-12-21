@@ -86,19 +86,19 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
     new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                           name='new_layer7_1x1_out',
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                          activation='relu')
+                                          activation=tf.nn.relu)
 
     new_layer7_1x1_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters=num_classes, kernel_size=(3, 3),
                                                           strides=(2, 2), name='new_layer7_1x1_out_upsampled', padding='same',
                                                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                          activation='relu')
+                                                          activation=tf.nn.relu)
 
     new_layer7_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer7_1x1_upsampled,
                                                              name="new_layer7_1x1_upsampled_bn",
                                                              training=is_training)
 
     new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
-                                          name="new_layer4_1x1_out", activation='relu',
+                                          name="new_layer4_1x1_out", activation=tf.nn.relu,
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     new_layer4_1x1_out_bn = tf.layers.batch_normalization(new_layer4_1x1_out,
@@ -110,7 +110,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
     new_layer47_upsampled = tf.layers.conv2d_transpose(new_layer_4_7_combined, filters=num_classes, kernel_size=(3, 3),
                                                        strides=(2, 2), name="new_layer47_upsampled", padding='same',
                                                        kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                       activation='relu')
+                                                       activation=tf.nn.relu)
 
     new_layer47_upsampled_bn = tf.layers.batch_normalization(new_layer47_upsampled,
                                                                 name="new_layer47_upsampled_bn",
@@ -118,7 +118,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
 
     new_layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer3_1x1_out", kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                          activation='relu')
+                                          activation=tf.nn.relu)
 
     new_layer3_1x1_out_bn = tf.layers.batch_normalization(new_layer3_1x1_out,
                                                           name="new_layer3_1x1_upsampled_bn", training = is_training)
@@ -128,7 +128,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
     new_final_layer_upsampled_4x = tf.layers.conv2d_transpose(out, filters=num_classes, kernel_size=(4, 4),
                                                               strides=(4, 4), name="new_final_layer_upsampled_4x",
                                                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                              activation='relu')
+                                                              activation=tf.nn.relu)
 
     new_final_layer_upsampled_4x_bn = tf.layers.batch_normalization(new_final_layer_upsampled_4x,
                                                                     name="new_final_layer_upsampled_4x_bn",
