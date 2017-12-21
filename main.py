@@ -274,7 +274,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         training_accuracy_metrics.append(training_accuracy)
 
         if epoch > 0 and (training_accuracy_metrics[-1] < training_accuracy_metrics[-2] - 0.01):
-            print("Early stopping!!!!")
+            print("Early stopping!!!! latest/prev accuracy: %.3f:%.3f" % (training_accuracy_metrics[-1], training_accuracy_metrics[-2]))
             break
 
         print(
