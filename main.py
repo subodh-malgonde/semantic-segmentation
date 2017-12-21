@@ -273,15 +273,15 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         training_loss_metrics.append(training_loss)
         training_accuracy_metrics.append(training_accuracy)
 
-        if epoch > 0 and (training_accuracy_metrics[-1] < training_accuracy_metrics[-2] - 0.01):
-            print("Early stopping!!!! latest/prev accuracy: %.3f:%.3f" % (training_accuracy_metrics[-1], training_accuracy_metrics[-2]))
-            break
-
         print(
             "Epoch %d:" % (epoch + 1),
             "Training loss: %.4f, accuracy: %.2f" % (training_loss, training_accuracy),
             "Validation loss: %.4f, accuracy: %.2f" % (validation_loss, validation_accuracy)
         )
+
+        if epoch > 0 and (training_accuracy_metrics[-1] < training_accuracy_metrics[-2] - 0.02):
+            print("Early stopping!!!! latest/prev accuracy: %.3f:%.3f" % (training_accuracy_metrics[-1], training_accuracy_metrics[-2]))
+            break
 
         if epoch % 10 == 0 and epoch > 0:
             save_model(sess)
