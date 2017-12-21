@@ -293,7 +293,7 @@ def run():
         '--num_epochs',
         type=int,
         nargs='?',
-        default=80,
+        default=20,
         help='Number of epochs.'
     )
     parser.add_argument(
@@ -301,7 +301,7 @@ def run():
         '--learning_rate',
         type=float,
         nargs='?',
-        default=0.06,
+        default=0.001,
         help='Learning rate'
     )
 
@@ -319,7 +319,7 @@ def run():
         '--batch_size',
         type=int,
         nargs='?',
-        default=16,
+        default=8,
         help='Batch size.'
     )
 
