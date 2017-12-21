@@ -90,10 +90,18 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
                                                           strides=(2, 2), name='new_layer7_1x1_out_upsampled', padding='same',
                                                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
+    new_layer7_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer7_1x1_upsampled,
+                                                             name="new_layer7_1x1_upsampled_bn",
+                                                             training=is_training)
+
     new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer4_1x1_out", kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
-    new_layer_4_7_combined = tf.add(new_layer7_1x1_upsampled, new_layer4_1x1_out, name="new_layer_4_7_combined")
+    new_layer4_1x1_out_bn = tf.layers.batch_normalization(new_layer4_1x1_out,
+                                                                name="new_layer4_1x1_out_bn",
+                                                                training=is_training)
+
+    new_layer_4_7_combined = tf.add(new_layer7_1x1_upsampled_bn, new_layer4_1x1_out_bn, name="new_layer_4_7_combined")
 
     new_layer47_upsampled = tf.layers.conv2d_transpose(new_layer_4_7_combined, filters=num_classes, kernel_size=(3, 3),
                                                           strides=(2, 2), name="new_layer47_upsampled", padding='same',
