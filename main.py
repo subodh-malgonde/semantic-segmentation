@@ -125,18 +125,10 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
 
     out = tf.add(new_layer3_1x1_out_bn, new_layer47_upsampled_bn)
 
-    new_final_layer_upsampled_4x = tf.layers.conv2d_transpose(out, filters=num_classes, kernel_size=(4, 4),
-                                                              strides=(4, 4), name="new_final_layer_upsampled_4x",
+    new_final_layer_upsampled_8x = tf.layers.conv2d_transpose(out, filters=num_classes, kernel_size=(16, 16),
+                                                              strides=(8, 8), name="new_final_layer_upsampled_8x",
                                                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
                                                               activation=tf.nn.relu)
-
-    new_final_layer_upsampled_4x_bn = tf.layers.batch_normalization(new_final_layer_upsampled_4x,
-                                                                    name="new_final_layer_upsampled_4x_bn",
-                                                                    training=is_training)
-
-    new_final_layer_upsampled_8x = tf.layers.conv2d_transpose(new_final_layer_upsampled_4x_bn, filters=num_classes, kernel_size=(5, 5),
-                                                              strides=(2, 2), name="new_final_layer_upsampled_8x", padding='same',
-                                                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     return new_final_layer_upsampled_8x
 
