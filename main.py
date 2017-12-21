@@ -154,7 +154,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     if TRANSFER_LEARNING_MODE:
         trainable_variables = []
         for variable in tf.trainable_variables():
-            if "new_" in variable.name:
+            if "new_" in variable.name or 'beta' in variable.name:
                 trainable_variables.append(variable)
         with tf.control_dependencies(update_ops):
             training_op = opt.minimize(cross_entropy_loss, var_list=trainable_variables, name="training_op")
@@ -403,7 +403,7 @@ def run():
 
                 if not CONTINUE_TRAINING:
                     if TRANSFER_LEARNING_MODE:
-                        my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name]
+                        my_variable_initializers = [var.initializer for var in tf.global_variables() if 'new_' in var.name or 'beta' in var.name]
                         sess.run(my_variable_initializers)
                     else:
                         sess.run(tf.global_variables_initializer())
