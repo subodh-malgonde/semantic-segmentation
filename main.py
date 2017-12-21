@@ -148,7 +148,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     is_correct_prediction = tf.equal(tf.argmax(reshaped_logits, 1), tf.argmax(reshaped_correct_label, 1))
     accuracy_op = tf.reduce_mean(tf.cast(is_correct_prediction, tf.float32), name="accuracy_op")
 
-    opt = tf.train.AdadeltaOptimizer(learning_rate=learning_rate)
+    opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
     if TRANSFER_LEARNING_MODE:
