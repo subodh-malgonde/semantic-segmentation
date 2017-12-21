@@ -292,7 +292,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
         )
 
     if validation_accuracy < best_validation_accuracy:
-        ckpt = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/checkpoint'))
+        ckpt = tf.train.get_checkpoint_state('checkpoints/')
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
 
