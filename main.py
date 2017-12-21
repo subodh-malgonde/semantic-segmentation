@@ -84,19 +84,21 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
     vgg_layer4_out = tf.multiply(vgg_layer4_out, 0.01)
 
     new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
-                                      name='new_layer7_1x1_out')
+                                      name='new_layer7_1x1_out', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     new_layer7_1x1_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters=num_classes, kernel_size=(4, 4),
-                                                          strides=(4, 4), name='new_layer7_1x1_out_upsampled')
+                                                          strides=(4, 4), name='new_layer7_1x1_out_upsampled',
+                                                          kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     new_layer7_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer7_1x1_upsampled,
                                                                 name="new_layer7_1x1_upsampled_bn", training=is_training)
 
     new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
-                                      name="new_layer4_1x1_out")
+                                      name="new_layer4_1x1_out", kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     new_layer4_1x1_upsampled = tf.layers.conv2d_transpose(new_layer4_1x1_out, filters=num_classes, kernel_size=(3, 3),
-                                                      strides=(2, 2), name="new_layer4_1x1_upsampled", padding='same')
+                                                          strides=(2, 2), name="new_layer4_1x1_upsampled", padding='same',
+                                                          kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     new_layer4_1x1_upsampled_bn = tf.layers.batch_normalization(new_layer4_1x1_upsampled,
                                                                 name="new_layer4_1x1_upsampled_bn",
@@ -104,7 +106,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
 
 
     new_layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
-                                      name="new_layer3_1x1_out")
+                                      name="new_layer3_1x1_out", kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     new_layer3_1x1_out_bn = tf.layers.batch_normalization(new_layer3_1x1_out,
                                                           name="new_layer3_1x1_upsampled_bn", training = is_training)
@@ -113,14 +115,16 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, is_training, num_clas
     out = tf.add(out, new_layer3_1x1_out_bn)
 
     new_final_layer_upsampled_4x = tf.layers.conv2d_transpose(out, filters=num_classes, kernel_size=(4, 4),
-                                                      strides=(4, 4), name="new_final_layer_upsampled_4x")
+                                                              strides=(4, 4), name="new_final_layer_upsampled_4x",
+                                                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     new_final_layer_upsampled_4x_bn = tf.layers.batch_normalization(new_final_layer_upsampled_4x,
                                                                     name="new_final_layer_upsampled_4x_bn",
                                                                     training=is_training)
 
     new_final_layer_upsampled_8x = tf.layers.conv2d_transpose(new_final_layer_upsampled_4x_bn, filters=num_classes, kernel_size=(5, 5),
-                                                       strides=(2, 2), name="new_final_layer_upsampled_8x", padding='same')
+                                                              strides=(2, 2), name="new_final_layer_upsampled_8x", padding='same',
+                                                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     return new_final_layer_upsampled_8x
 
@@ -301,7 +305,7 @@ def run():
         '--learning_rate',
         type=float,
         nargs='?',
-        default=0.001,
+        default=0.05,
         help='Learning rate'
     )
 
