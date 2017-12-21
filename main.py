@@ -283,7 +283,7 @@ def train_nn(sess, epochs, data_folder, image_shape, batch_size, training_image_
 
         if validation_accuracy > best_validation_accuracy:
             best_validation_accuracy = validation_accuracy
-            saver.save(sess, 'checkpoints/checkpoint')
+            saver.save(sess, 'checkpoints/')
 
         print(
             "Epoch %d:" % (epoch + 1),
